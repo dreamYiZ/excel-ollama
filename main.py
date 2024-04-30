@@ -57,8 +57,6 @@ def read_excel_in_data_folder_and_analyze():
     output_str = ""
     # 打印返回的数据
     for response_json in response_jsons:
-        # print(response_json["response"])
-        # print(json.dumps(response_json))
         output_str += response_json["response"]
         
     print(output_str)
