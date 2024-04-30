@@ -31,12 +31,8 @@ def read_all_excel_files_in_folder(folder_path):
     return info_text
 
 
-if __name__ == '__main__':
-    init.hello()
-    init.check_system()
-    init.pull_model()
-    
-    # 使用函数
+def read_excel_in_data_folder_and_analyze():
+        # 使用函数
     excel_info_text  = read_all_excel_files_in_folder('data')
 
     # 定义API的URL
@@ -66,3 +62,11 @@ if __name__ == '__main__':
         output_str += response_json["response"]
         
     print(output_str)
+    
+
+if __name__ == '__main__':
+    init.hello()
+    init.check_system()
+    init.pull_model()
+    
+    read_excel_in_data_folder_and_analyze()
