@@ -26,7 +26,6 @@ def say(prompt, model="llama3"):
     for response_json in response_jsons:
         output_str += response_json["response"]
 
-    print(output_str)
 
     output_json = {"data": [{"type": "excel", "data": output_str}]}
 

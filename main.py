@@ -4,7 +4,16 @@ import pandas as pd
 import requests
 import json
 import say
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup,NavigableString
+import create_http
+import time  # 在文件开头导入time模块
+import shutil
+
+
+# 定义源文件和目标文件的路径
+src_file = 'src/style.css'
+dst_file = 'output/style.css'
+
 
 def read_all_excel_files_in_folder(folder_path):
     # 获取文件夹中的所有文件名
@@ -45,7 +54,6 @@ def read_all_excel_files_in_folder(folder_path):
     return info_list
 
 
-import time  # 在文件开头导入time模块
 
 
 def read_excel_in_data_folder_and_analyze():
@@ -56,7 +64,6 @@ def read_excel_in_data_folder_and_analyze():
 
     for excel_info_text in excel_info_text_list:
 
-        print(excel_info_text)
 
         # 将字典转换为字符串
         excel_info_text_str = json.dumps(excel_info_text, ensure_ascii=False)
@@ -73,7 +80,6 @@ def read_excel_in_data_folder_and_analyze():
         # 使用say函数发送请求并获取响应
         output_str = say.say(data["prompt"], model=data["model"])
 
-        print(output_str)
 
         excel_opt_list.append(output_str)
 
@@ -112,12 +118,23 @@ def main():
     # 找到<main>标签
     main_tag = soup.find("main", class_="main")
 
-    # 替换<main>标签的内容
-    main_tag.string = main_output
+    # 按换行符分割main_output
+    paragraphs = main_output.split('\n')
+
+    # 用<p>标签包裹每一段，并将其作为HTML插入
+    for p in paragraphs:
+        new_tag = soup.new_tag("p")
+        new_tag.string = NavigableString(p)
+        main_tag.append(new_tag)
 
     # 写回HTML文件
     with open("output/index.html", "w") as file:
         file.write(str(soup))
+        
+    # 使用shutil.copy()函数复制文件
+    shutil.copy(src_file, dst_file)        
+        
+    create_http.start_server()
 
 
 if __name__ == "__main__":
