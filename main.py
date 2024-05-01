@@ -3,16 +3,22 @@ import os
 import pandas as pd
 import requests
 import json
+import say
+from bs4 import BeautifulSoup
 
 def read_all_excel_files_in_folder(folder_path):
     # 获取文件夹中的所有文件名
     filenames = os.listdir(folder_path)
 
     # 筛选出Excel文件
-    excel_filenames = [filename for filename in filenames if filename.endswith('.xlsx') or filename.endswith('.xls')]
+    excel_filenames = [
+        filename
+        for filename in filenames
+        if filename.endswith(".xlsx") or filename.endswith(".xls")
+    ]
 
-    # 初始化一个字符串来收集信息
-    info_text = ""
+    # 初始化一个列表来收集信息
+    info_list = []
 
     # 读取每个Excel文件
     for excel_filename in excel_filenames:
@@ -24,47 +30,95 @@ def read_all_excel_files_in_folder(folder_path):
 
         # 收集每个工作表的信息
         for sheet_name, df in dfs.items():
-            info_text += f"Sheet name: {sheet_name}\n"
-            info_text += df.to_string() + "\n\n"  # 使用to_string()方法将DataFrame转换为字符串
+            # 检查每一列，如果数据类型是日期，就将其转换为字符串
+            for col in df.columns:
+                if pd.api.types.is_datetime64_any_dtype(df[col]):
+                    df[col] = df[col].dt.strftime("%Y-%m-%d")
+            info = {
+                "文件名": excel_filename,
+                "工作表名": sheet_name,
+                "数据": df.to_dict(),
+            }
+            info_list.append(info)
 
     # 返回收集到的信息
-    return info_text
+    return info_list
+
+
+import time  # 在文件开头导入time模块
 
 
 def read_excel_in_data_folder_and_analyze():
-        # 使用函数
-    excel_info_text  = read_all_excel_files_in_folder('data')
+    # 使用函数
+    excel_info_text_list = read_all_excel_files_in_folder("data")
 
-    # 定义API的URL
-    url = "http://localhost:11434/api/generate"
-    
-    print(excel_info_text)
+    excel_opt_list = []
 
-    # 定义请求的数据
-    data = {
-        "model": "llama3",
-        "prompt": "所有的回答采用中文，分析这个excel数据，并给出数据报告,这个excel是什么的，其中的数据有什么特点？比如平均值、最高值、最低值。\n"+excel_info_text +"\n" + "。请用中文回答。"
-    }
-    # 发送POST请求
-    response = requests.post(url, data=json.dumps(data))
+    for excel_info_text in excel_info_text_list:
 
-    # 将返回的数据分割成多个JSON对象
-    response_texts = response.text.split("\n")
-    
-    # 解析每个JSON对象
-    response_jsons = [json.loads(response_text) for response_text in response_texts if response_text]
+        print(excel_info_text)
 
-    output_str = ""
-    # 打印返回的数据
-    for response_json in response_jsons:
-        output_str += response_json["response"]
-        
-    print(output_str)
-    
+        # 将字典转换为字符串
+        excel_info_text_str = json.dumps(excel_info_text, ensure_ascii=False)
 
-if __name__ == '__main__':
+        # 定义请求的数据
+        data = {
+            "model": "llama3",
+            "prompt": f'所有的回答采用中文，这是一个{excel_info_text["文件名"]}-{excel_info_text["工作表名"]}表，请你作为一个专业的数据挖掘分析师和企业管理专家进行分析，并提出企业经营管理建议。\n'
+            + excel_info_text_str
+            + "\n"
+            + "。请用中文回答。",
+        }
+
+        # 使用say函数发送请求并获取响应
+        output_str = say.say(data["prompt"], model=data["model"])
+
+        print(output_str)
+
+        excel_opt_list.append(output_str)
+
+        time.sleep(1)  # 在每个请求之间等待1秒
+
+    return excel_opt_list
+
+
+def main():
     init.hello()
     init.check_system()
     init.pull_model()
-    
-    read_excel_in_data_folder_and_analyze()
+
+    excel_output_str = read_excel_in_data_folder_and_analyze()
+
+    total_excel = ""
+    for excel_opt_item in excel_output_str:
+        # 定义请求的数据
+        total_excel += excel_opt_item
+
+    prompt = (
+        "所有的回答采用中文，你是专业的企业管理人员，请对数据分析报告进行总结\n"
+        + total_excel
+        + "\n"
+        + "。请用中文回答。"
+    )
+    got = say.say(prompt, model="llama3")
+
+    # 你的main_output内容
+    main_output = total_excel + "\n" + got
+
+    # 读取HTML文件
+    with open("src/index.html", "r") as file:
+        soup = BeautifulSoup(file, "html.parser")
+
+    # 找到<main>标签
+    main_tag = soup.find("main", class_="main")
+
+    # 替换<main>标签的内容
+    main_tag.string = main_output
+
+    # 写回HTML文件
+    with open("output/index.html", "w") as file:
+        file.write(str(soup))
+
+
+if __name__ == "__main__":
+    main()
