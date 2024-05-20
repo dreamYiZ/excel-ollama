@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import requests
 import json
 import os
@@ -26,7 +27,6 @@ def say(prompt, model="llama3"):
     for response_json in response_jsons:
         output_str += response_json["response"]
 
-
     output_json = {"data": [{"type": "excel", "data": output_str}]}
 
     # 获取当前时间
@@ -35,8 +35,13 @@ def say(prompt, model="llama3"):
     # 格式化时间字符串，用于生成文件名
     time_str = now.strftime("%Y%m%d%H%M%S")
 
+    # 创建文件夹路径
+    folder_path = "output"
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
     # 创建文件路径
-    file_path = os.path.join("output", f"data_{time_str}.json")
+    file_path = os.path.join(folder_path, f"data_{time_str}.json")
 
     # 将output_json保存为JSON文件
     with open(file_path, "w") as json_file:

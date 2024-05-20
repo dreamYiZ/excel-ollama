@@ -16,6 +16,9 @@ dst_file = 'output/style.css'
 
 
 def read_all_excel_files_in_folder(folder_path):
+    
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
     # 获取文件夹中的所有文件名
     filenames = os.listdir(folder_path)
 
